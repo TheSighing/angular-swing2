@@ -21,9 +21,9 @@ Give it a [swing](http://gajus.com/sandbox/swing/examples/card-stack/)! and plea
     * [Download](#angular-swing-download)
 
 
-<h2 id="angular-swing-usage">Usage</h2>
+<h2 id="angular-swing2-usage">Usage</h2>
 
-Include [./dist/angular-swing.js.](https://raw.githubusercontent.com/gajus/angular-swing/master/dist/swing.js).
+Include [./dist/angular-swing2.js.](https://raw.githubusercontent.com/gajus/angular-swing/master/dist/swing.js).
 
 Load `gajus.swing` module, e.g.
 
@@ -89,7 +89,7 @@ $scope.add = function (name) {
 };
 ```
 
-<h3 id="angular-swing-usage-examples">Examples</h3>
+<h3 id="angular-swing2-usage-examples">Examples</h3>
 
 * [Card stack](http://gajus.com/sandbox/angular-swing/examples/card-stack/) using AngularJS directive.
 
@@ -97,7 +97,7 @@ There are more examples that using the standalone [Swing](https://github.com/gaj
 
 The code for all of the examples is in the [./examples/](https://github.com/gajus/angular-swing/tree/master/examples/) folder.
 
-[Raise an issue](https://github.com/gajus/angular-swing/issues) if you are missing an example.
+[Raise an issue](https://github.com/gajus/angular-swing2/issues) if you are missing an example.
 
 <h2 id="angular-swing-events">Events</h2>
 
