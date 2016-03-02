@@ -126,11 +126,5 @@ Event listener expression can use `eventName` and [`eventObject`](#event-object)
 Using [Bower](http://bower.io/):
 
 ```sh
-bower install angular-swing
-```
-
-Using [NPM](https://www.npmjs.org/):
-
-```sh
-npm install angular-swing
+bower install angular-swing2
 ```
