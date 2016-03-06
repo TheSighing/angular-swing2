@@ -112,6 +112,7 @@ var Card = undefined;
 Card = function (stack, targetElement) {
     var card = undefined,
         config = undefined,
+        flipped = undefined,
         construct = undefined,
         currentX = undefined,
         currentY = undefined,
@@ -195,10 +196,19 @@ Card = function (stack, targetElement) {
 
             x = lastTranslate.x + e.deltaX;
             y = lastTranslate.y + e.deltaY;
+            console.log("X: ", x);
+            console.log("Y: ", y);
 
             if (config.isThrowOut(x, targetElement, config.throwOutConfidence(x, targetElement))) {
+                console.log("throout based on X");
                 card.throwOut(x, y);
-            } else {
+            }
+            else if (config.isThrowOut(y, targetElement, config.throwOutConfidenceY(y, targetElement))) {
+                console.log("throout based on Y");
+                config.transform(targetElement, x, y, 0, false, true);
+                card.throwOut(x, y);
+            }
+            else {
                 card.throwIn(x, y);
             }
 
@@ -293,7 +303,8 @@ Card = function (stack, targetElement) {
         doMove = function () {
             var r = undefined,
                 x = undefined,
-                y = undefined;
+                y = undefined,
+                throwOutConfidenceY = undefined;
 
             if (currentX === lastX && currentY === lastY) {
                 return;
@@ -305,8 +316,9 @@ Card = function (stack, targetElement) {
             x = lastTranslate.x + currentX;
             y = lastTranslate.y + currentY;
             r = config.rotation(x, y, targetElement, config.maxRotation);
+            //throwOutConfidenceY = config.isThrowOut(y, targetElement, config.throwOutConfidenceY(y, targetElement));
 
-            config.transform(targetElement, x, y, r);
+            config.transform(targetElement, x, y, r, true, false);
 
             eventEmitter.trigger('dragmove', {
                 target: targetElement,
@@ -323,14 +335,16 @@ Card = function (stack, targetElement) {
          * @return {undefined}
          */
         _onSpringUpdate = function (x, y) {
-            var r = undefined;
+            var r = undefined,
+                throwOutConfidenceY = undefined;
 
             r = config.rotation(x, y, targetElement, config.maxRotation);
 
             lastTranslate.x = x || 0;
             lastTranslate.y = y || 0;
+            throwOutConfidenceY = config.isThrowOut(y, targetElement, config.throwOutConfidenceY(y, targetElement));
 
-            Card.transform(targetElement, x, y, r);
+            config.transform(targetElement, x, y, r, true, throwOutConfidenceY);
         };
 
         /**
@@ -343,7 +357,7 @@ Card = function (stack, targetElement) {
             lastThrow.fromX = fromX;
             lastThrow.fromY = fromY;
             lastThrow.direction = lastThrow.fromX < 0 ? Card.DIRECTION_LEFT : Card.DIRECTION_RIGHT;
-            lastThrow.directionVert = lastThrow.fromY < 0 ? Card.DIRECTION_DOWN : Card.DIRECTION_UP;
+            lastThrow.directionVert = lastThrow.fromY > 0 ? Card.DIRECTION_DOWN : Card.DIRECTION_UP;
 
             if (where === Card.THROW_IN) {
                 springThrowIn.setCurrentValue(0).setAtRest().setEndValue(1);
@@ -356,17 +370,18 @@ Card = function (stack, targetElement) {
                     throwDirection: lastThrow.direction
                 });
             } else if (where === Card.THROW_OUT) {
-                springThrowOut.setCurrentValue(0).setAtRest().setVelocity(100).setEndValue(1);
 
                 eventEmitter.trigger('throwout', {
                     target: targetElement,
                     throwDirection: lastThrow.direction
                 });
 
-                //Compare the amount of up or down versus left or right to decide to go with vertical or horizontal behavior.
-                if (lastThrow.direction === Card.DIRECTION_LEFT) {
-            //Card.appendToParent(targetElement);
-            //Card.insertBelow(targetElement);
+
+                if (lastThrow.direction === Card.DIRECTION_LEFT && Math.abs(lastThrow.fromX) > Math.abs(lastThrow.fromY)) {
+                    springThrowOut.setCurrentValue(0).setAtRest().setVelocity(100).setEndValue(1);
+                    //Card.appendToParent(targetElement);
+                    //Card.insertBelow(targetElement);
+                    console.log("Throw compare LEFT x: " + lastThrow.fromX + " y: " + lastThrow.fromY);
                     eventEmitter.trigger('throwoutleft', {
                         target: targetElement,
                         throwDirection: lastThrow.direction
@@ -374,8 +389,10 @@ Card = function (stack, targetElement) {
 
                     lastThrow.placementLeft = true;
                     lastThrow.placementRight = false;
-                } else {
-            //Card.appendToParent(targetElement);
+                }
+                else if (lastThrow.direction === Card.DIRECTION_RIGHT && Math.abs(lastThrow.fromX) > Math.abs(lastThrow.fromY)){
+                    //Card.appendToParent(targetElement);
+                    console.log("Throw compare RIGHT x: " + lastThrow.fromX + " y: " + lastThrow.fromY);
                     Card.insertBelow(targetElement);
                     springThrowIn.setCurrentValue(0).setAtRest().setEndValue(1);
                     eventEmitter.trigger('throwoutright', {
@@ -385,6 +402,28 @@ Card = function (stack, targetElement) {
 
                     lastThrow.placementRight = true;
                     lastThrow.placementLeft = false;
+                }
+                else if (lastThrow.directionVert === Card.DIRECTION_UP) {
+                  //Card.appendToParent(targetElement);
+                  //config.transform(targetElement, lastThrow.fromX, lastThrow.fromY, 0, false, true);
+                  //springThrowIn.setCurrentValue(0).setAtRest().setEndValue(1);
+                  console.log("Throw compare in card DIRECTION_UP x: " + lastThrow.fromX + " y: " + lastThrow.fromY);
+
+                  eventEmitter.trigger('throwoutup', {
+                      target: targetElement,
+                      throwDirection: lastThrow.direction
+                  });
+                }
+                else{
+                  //flipped = false;
+                  console.log("Should be down then.");
+                  //config.transform(targetElement, lastThrow.fromX, lastThrow.fromY, 0, flipped, true);
+                  //springThrowIn.setCurrentValue(0).setAtRest().setEndValue(1);
+
+                  eventEmitter.trigger('throwoutdown', {
+                      target: targetElement,
+                      throwDirection: lastThrow.direction
+                  });
                 }
             } else {
                 throw new Error('Invalid throw event.');
@@ -453,6 +492,7 @@ Card.makeConfig = function () {
     defaultConfig = {
         isThrowOut: Card.isThrowOut,
         throwOutConfidence: Card.throwOutConfidence,
+        throwOutConfidenceY: Card.throwOutConfidenceY,
         throwOutDistance: Card.throwOutDistance,
         minThrowOutDistance: 250,
         maxThrowOutDistance: 250,
@@ -476,14 +516,22 @@ Card.makeConfig = function () {
  * @param {Number} r
  * @return {undefined}
  */
-Card.transform = function (element, x, y, r) {
-    element.style[(0, _vendorPrefix2['default'])('transform')] = 'translate3d(0, 0, 0) translate(' + x + 'px, ' + y + 'px) rotate(' + 0 + 'deg)';
+Card.transform = function (element, x, y, r, flipped, throwOutConfidenceY) {
+    console.log("Here in the transform x: " + x + " y: " + y);
+    if (throwOutConfidenceY && !flipped) {
+      console.log("Here in the transformY x: " + x + " y: " + y);
+      element.style[(0, _vendorPrefix2['default'])('transform')] = 'translate3d(0, 0, 0) translate(' + 0 + 'px, ' + 0 + 'px) rotate3d(1, 0, 0, ' + 180 + 'deg)';
+    }
+    else{
+      element.style[(0, _vendorPrefix2['default'])('transform')] = 'translate3d(0, 0, 0) translate(' + x + 'px, ' + y + 'px) rotate(' + r + 'deg)';
+    }
+
 };
 
-Card.transformY = function (element, x, y, r) {
-    console.log("the y value: ", y);
-    //this below causes a flip but you have to limit it to when the user slids the card up
-    element.style[(0, _vendorPrefix2['default'])('transform')] = 'translate3d(0, 0, 0) translate(' + x + 'px, ' + y + 'px) rotate3d(1, 0, 0, ' + 180 + 'deg)';
+Card.transformY = function (element, x, y) {
+    console.log("Here in the transformY");
+    //this below causes a flip but you have to limit it to when the user slides the card up
+    element.style[(0, _vendorPrefix2['default'])('transform')] = 'translate3d(0, 0, 0) translate(' + 0 + 'px, ' + 0 + 'px) rotate3d(1, 0, 0, ' + 180 + 'deg)';
 };
 
 /**
@@ -530,6 +578,9 @@ Card.insertBelow = function (element) {
  */
 Card.throwOutConfidence = function (offset, element) {
     return Math.min(Math.abs(offset) / element.offsetWidth, 1);
+};
+Card.throwOutConfidenceY = function (offset, element) {
+    return Math.min(Math.abs(offset) / element.offsetHeight, 1);
 };
 
 /**
